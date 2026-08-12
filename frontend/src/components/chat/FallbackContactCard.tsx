@@ -1,6 +1,6 @@
 import React from 'react';
 import { FALLBACK_CONTACT } from '../../config/env';
-import { UserCheck, Mail, Phone, HelpCircle } from 'lucide-react';
+import { ShieldCheck, Mail, Globe, HelpCircle } from 'lucide-react';
 
 export const FallbackContactCard: React.FC = () => {
   return (
@@ -10,7 +10,7 @@ export const FallbackContactCard: React.FC = () => {
           <HelpCircle className="w-5 h-5" />
         </div>
         <div>
-          <h4 className="text-sm font-bold text-white">Need Human Assistance?</h4>
+          <h4 className="text-sm font-bold text-white">Need Additional Assistance?</h4>
           <p className="text-xs text-slate-400">
             This question is outside the official club starter documents.
           </p>
@@ -20,7 +20,7 @@ export const FallbackContactCard: React.FC = () => {
       <div className="bg-slate-950/70 border border-slate-800 rounded-xl p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-full bg-[#ff9900]/20 flex items-center justify-center text-[#ff9900]">
-            <UserCheck className="w-4 h-4" />
+            <ShieldCheck className="w-4 h-4" />
           </div>
           <div>
             <div className="text-sm font-bold text-white">
@@ -42,11 +42,13 @@ export const FallbackContactCard: React.FC = () => {
           </a>
 
           <a
-            href={`tel:${FALLBACK_CONTACT.phone}`}
+            href="https://aws.amazon.com/developer/community/student-builders/"
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs text-slate-200 hover:text-white transition-all"
           >
-            <Phone className="w-3.5 h-3.5 text-[#ff9900]" />
-            <span>{FALLBACK_CONTACT.phone}</span>
+            <Globe className="w-3.5 h-3.5 text-[#ff9900]" />
+            <span>AWS Student Builders</span>
           </a>
         </div>
       </div>

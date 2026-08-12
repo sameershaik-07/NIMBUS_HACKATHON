@@ -4,7 +4,7 @@ import { chatApiService } from '../services/api';
 import { ChatMessage } from '../components/chat/ChatMessage';
 import { ChatComposer } from '../components/chat/ChatComposer';
 import { TypingIndicator } from '../components/chat/TypingIndicator';
-import { Bot, ShieldCheck, Sparkles, AlertCircle, RotateCcw, HelpCircle, Info } from 'lucide-react';
+import { Bot, ShieldCheck, Sparkles, AlertCircle, RotateCcw } from 'lucide-react';
 
 interface ChatPageProps {
   initialQuery?: string;
@@ -21,6 +21,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastQuestion, setLastQuestion] = useState<string | null>(null);
+  const [showComposer, setShowComposer] = useState(true);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -30,6 +31,33 @@ export const ChatPage: React.FC<ChatPageProps> = ({
 
   useEffect(() => {
     scrollToBottom();
+  }, [messages, loading]);
+
+  // Track scroll position to hide composer while reading response and show when scrolled to bottom
+  useEffect(() => {
+    const checkScrollPosition = () => {
+      const scrollableHeight = document.documentElement.scrollHeight;
+      const viewportHeight = window.innerHeight;
+      const currentScroll = window.scrollY;
+
+      // If content fits within viewport without scrolling, keep composer visible
+      if (scrollableHeight <= viewportHeight + 80) {
+        setShowComposer(true);
+      } else {
+        // Show composer only when scrolled near bottom (within 80px)
+        const isAtBottom = viewportHeight + currentScroll >= scrollableHeight - 80;
+        setShowComposer(isAtBottom);
+      }
+    };
+
+    checkScrollPosition();
+    window.addEventListener('scroll', checkScrollPosition, { passive: true });
+    window.addEventListener('resize', checkScrollPosition, { passive: true });
+
+    return () => {
+      window.removeEventListener('scroll', checkScrollPosition);
+      window.removeEventListener('resize', checkScrollPosition);
+    };
   }, [messages, loading]);
 
   // Execute initial query if passed from Dashboard
@@ -118,7 +146,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
       </div>
 
       {/* Messages Workspace */}
-      <div className="flex-1 overflow-y-auto space-y-4 pb-6">
+      <div className="flex-1 space-y-4 pb-6">
         
         {/* Empty Welcome State */}
         {messages.length === 0 && (
@@ -148,6 +176,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
                 {starterSuggestions.map((suggestion, idx) => (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => handleSendMessage(suggestion)}
                     className="px-4 py-2.5 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-[#ff9900]/50 hover:bg-[#ff9900]/10 text-xs font-medium text-slate-300 hover:text-[#ff9900] transition-all duration-200 hover:-translate-y-0.5 shadow-sm"
                   >
@@ -176,6 +205,7 @@ export const ChatPage: React.FC<ChatPageProps> = ({
             </div>
 
             <button
+              type="button"
               onClick={handleRetry}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-xs font-bold text-white transition-colors"
             >
@@ -189,7 +219,11 @@ export const ChatPage: React.FC<ChatPageProps> = ({
       </div>
 
       {/* Floating Composer */}
-      <ChatComposer onSendMessage={handleSendMessage} disabled={loading} />
+      <ChatComposer
+        onSendMessage={handleSendMessage}
+        disabled={loading}
+        visible={showComposer}
+      />
 
     </div>
   );

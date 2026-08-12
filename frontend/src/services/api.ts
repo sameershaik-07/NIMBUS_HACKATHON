@@ -52,7 +52,6 @@ export const chatApiService = {
       const isFallback = Boolean(
         data.is_fallback ||
         data.isFallback ||
-        answerText.toLowerCase().includes('shanmukha sasi') ||
         answerText.toLowerCase().includes('could not find') ||
         answerText.toLowerCase().includes('insufficient evidence') ||
         (answerText === '' && cleanedSources.length === 0)
@@ -96,6 +95,7 @@ function normalizeSources(rawSources: any[]): ChatSource[] {
 
     if (typeof item === 'string') {
       fileName = extractFilename(item);
+      snippet = item;
     } else if (typeof item === 'object' && item !== null) {
       const rawFile = item.file || item.filename || item.uri || item.document || '';
       fileName = extractFilename(rawFile);
@@ -111,7 +111,7 @@ function normalizeSources(rawSources: any[]): ChatSource[] {
     return {
       file: fileName,
       section: sectionName,
-      snippet: snippet.substring(0, 150)
+      snippet: snippet.trim()
     };
   });
 }

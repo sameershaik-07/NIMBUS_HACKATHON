@@ -12,9 +12,9 @@ export const ENV = {
 };
 
 export const FALLBACK_CONTACT = {
-  name: 'Shanmukha Sasi Sadineni',
-  role: 'AWS Student Builder Group Leader',
-  email: 'sadinenisasi@gmail.com',
-  phone: '7396025334',
-  message: 'I could not find that in the official club documents. Please contact Shanmukha Sasi Sadineni, AWS Student Builder Group Leader, for further assistance.'
+  name: 'AWS Student Builder Group',
+  role: 'Official Campus Chapter Leadership',
+  email: 'aws-student-builders@amazon.com',
+  phone: 'AWS Builder Support',
+  message: 'I could not find that in the official club documents. Please reach out to the AWS Student Builder Group team for assistance.'
 };

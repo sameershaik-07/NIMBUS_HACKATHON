@@ -4,9 +4,14 @@ import { Send, Sparkles } from 'lucide-react';
 interface ChatComposerProps {
   onSendMessage: (text: string) => void;
   disabled?: boolean;
+  visible?: boolean;
 }
 
-export const ChatComposer: React.FC<ChatComposerProps> = ({ onSendMessage, disabled }) => {
+export const ChatComposer: React.FC<ChatComposerProps> = ({
+  onSendMessage,
+  disabled,
+  visible = true
+}) => {
   const [text, setText] = useState('');
 
   const handleSubmit = (e?: React.FormEvent) => {
@@ -26,9 +31,13 @@ export const ChatComposer: React.FC<ChatComposerProps> = ({ onSendMessage, disab
   return (
     <form
       onSubmit={handleSubmit}
-      className="sticky bottom-4 z-20 max-w-4xl mx-auto px-4 w-full"
+      className={`sticky bottom-4 z-20 max-w-4xl mx-auto px-4 w-full transition-all duration-300 ${
+        visible === false
+          ? 'opacity-0 pointer-events-none translate-y-6 scale-95'
+          : 'opacity-100 translate-y-0 scale-100'
+      }`}
     >
-      <div className="relative rounded-2xl bg-slate-900/90 border border-slate-800 focus-within:border-[#ff9900]/60 focus-within:shadow-[0_0_25px_rgba(255,153,0,0.2)] backdrop-blur-2xl p-2 transition-all duration-300">
+      <div className="relative rounded-2xl bg-slate-900/95 border border-slate-800 focus-within:border-[#ff9900]/60 focus-within:shadow-[0_0_25px_rgba(255,153,0,0.2)] backdrop-blur-2xl p-2 transition-all duration-300 shadow-2xl">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}

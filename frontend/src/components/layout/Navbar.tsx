@@ -51,7 +51,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onNavigate }) => {
                 }`}
               >
                 <LayoutDashboard className="w-4 h-4" />
-                Dashboard
+                Home Page
               </button>
 
               <button
@@ -132,7 +132,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, onNavigate }) => {
                 className="w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-slate-200 hover:bg-slate-800 text-left"
               >
                 <LayoutDashboard className="w-5 h-5 text-[#ff9900]" />
-                Dashboard
+                Home Page
               </button>
               <button
                 onClick={() => { onNavigate('chat'); setMobileMenuOpen(false); }}

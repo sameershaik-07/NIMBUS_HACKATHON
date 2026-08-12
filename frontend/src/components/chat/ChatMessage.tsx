@@ -1,15 +1,45 @@
-import React from 'react';
-import { ChatMessage as ChatMessageType } from '../../types/chat';
-import { SourceCard } from './SourceCard';
+import React, { useState } from 'react';
+import { ChatMessage as ChatMessageType, ChatSource } from '../../types/chat';
+import { SourceCard, GroupedDocument } from './SourceCard';
+import { CitationSidePanel } from './CitationSidePanel';
 import { FallbackContactCard } from './FallbackContactCard';
+import { MarkdownRenderer } from '../ui/MarkdownRenderer';
 import { Bot, User, ShieldCheck } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
 }
 
+export function groupSourcesByDocument(sources: ChatSource[]): GroupedDocument[] {
+  if (!sources || sources.length === 0) return [];
+  const map = new Map<string, ChatSource[]>();
+
+  for (const src of sources) {
+    const key = src.file || src.filename || src.uri || src.document || 'Club Knowledge Document';
+    if (!map.has(key)) {
+      map.set(key, []);
+    }
+    map.get(key)!.push(src);
+  }
+
+  const result: GroupedDocument[] = [];
+  map.forEach((citations, key) => {
+    result.push({
+      id: key,
+      fileName: key,
+      sectionName: citations[0]?.section || citations[0]?.title || undefined,
+      citations
+    });
+  });
+
+  return result;
+}
+
 export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
   const isUser = message.sender === 'user';
+  const [selectedDocGroup, setSelectedDocGroup] = useState<GroupedDocument | null>(null);
+
+  const groupedDocs = !isUser && message.sources ? groupSourcesByDocument(message.sources) : [];
 
   return (
     <div className={`flex items-start gap-3 my-5 ${isUser ? 'flex-row-reverse' : ''} animate-fadeIn`}>
@@ -48,24 +78,26 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         <div
           className={`rounded-2xl p-5 leading-relaxed text-sm shadow-xl transition-all ${
             isUser
-              ? 'rounded-tr-sm bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 text-slate-100'
+              ? 'rounded-tr-sm bg-gradient-to-r from-slate-900 to-slate-800 border border-slate-700 text-slate-100 font-sans whitespace-pre-wrap'
               : 'rounded-tl-sm bg-[#0e1626]/90 border border-slate-800 text-slate-200 shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
           }`}
         >
-          {/* Format Paragraphs */}
-          <div className="whitespace-pre-wrap font-sans space-y-2">
-            {message.text}
-          </div>
+          {/* Assistant message uses MarkdownRenderer, User message uses standard text */}
+          {isUser ? (
+            <div>{message.text}</div>
+          ) : (
+            <MarkdownRenderer content={message.text} />
+          )}
 
           {/* Fallback Contact Card */}
           {message.isFallback && <FallbackContactCard />}
 
-          {/* Sources Section */}
-          {!isUser && message.sources && message.sources.length > 0 && (
+          {/* Grouped Grounded Sources Section */}
+          {!isUser && groupedDocs.length > 0 && (
             <div className="mt-4 pt-4 border-t border-slate-800/80">
               <div className="flex items-center justify-between mb-2.5">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#ff9900]">
-                  Grounded Sources ({message.sources.length})
+                  Grounded Sources ({groupedDocs.length} {groupedDocs.length === 1 ? 'document' : 'documents'})
                 </span>
                 <span className="text-[10px] text-slate-500 font-mono">
                   Official Starter Docs
@@ -73,14 +105,29 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {message.sources.map((source, idx) => (
-                  <SourceCard key={idx} source={source} index={idx} />
+                {groupedDocs.map((docGroup, idx) => (
+                  <SourceCard
+                    key={docGroup.id}
+                    documentGroup={docGroup}
+                    onSelect={(selected) => setSelectedDocGroup(selected)}
+                    index={idx}
+                  />
                 ))}
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Responsive Citation Side Panel */}
+      {selectedDocGroup && (
+        <CitationSidePanel
+          isOpen={Boolean(selectedDocGroup)}
+          onClose={() => setSelectedDocGroup(null)}
+          documentName={selectedDocGroup.fileName}
+          citations={selectedDocGroup.citations}
+        />
+      )}
     </div>
   );
 };
