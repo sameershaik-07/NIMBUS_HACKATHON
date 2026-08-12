@@ -20,31 +20,51 @@ type TabType = 'landing' | 'signin' | 'signup' | 'verify' | 'forgot' | 'reset' |
 const MainApp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<TabType>('landing');
+  // Initialize active tab from localStorage if available so refreshing stays on the same page
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const saved = localStorage.getItem('nimbus_active_tab') as TabType;
+    if (saved && ['dashboard', 'chat', 'landing', 'signin', 'signup'].includes(saved)) {
+      return saved;
+    }
+    return 'landing';
+  });
+
   const [registeredEmail, setRegisteredEmail] = useState<string>('');
   const [resetEmail, setResetEmail] = useState<string>('');
   const [signInMessage, setSignInMessage] = useState<string | null>(null);
   const [chatQuery, setChatQuery] = useState<string | undefined>(undefined);
 
-  // Sync default tab when auth changes
+  // Sync active tab state when auth status changes or page reloads
   useEffect(() => {
     if (!loading) {
-      if (isAuthenticated && (activeTab === 'landing' || activeTab === 'signin' || activeTab === 'signup')) {
-        setActiveTab('dashboard');
-      } else if (!isAuthenticated && (activeTab === 'dashboard' || activeTab === 'chat')) {
-        setActiveTab('landing');
+      if (isAuthenticated) {
+        // If logged in, check if user had a saved protected tab ('chat' or 'dashboard')
+        const saved = localStorage.getItem('nimbus_active_tab') as TabType;
+        if (saved === 'chat' || saved === 'dashboard') {
+          setActiveTab(saved);
+        } else if (activeTab === 'landing' || activeTab === 'signin' || activeTab === 'signup') {
+          setActiveTab('dashboard');
+          localStorage.setItem('nimbus_active_tab', 'dashboard');
+        }
+      } else {
+        // If unauthenticated, redirect from protected pages to landing
+        if (activeTab === 'dashboard' || activeTab === 'chat') {
+          setActiveTab('landing');
+          localStorage.removeItem('nimbus_active_tab');
+        }
       }
     }
   }, [isAuthenticated, loading]);
 
   const handleNavigate = (tab: TabType) => {
     setActiveTab(tab);
+    localStorage.setItem('nimbus_active_tab', tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleOpenChatWithQuery = (query: string) => {
     setChatQuery(query);
-    setActiveTab('chat');
+    handleNavigate('chat');
   };
 
   return (

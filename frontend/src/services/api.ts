@@ -1,5 +1,5 @@
 import { ENV, FALLBACK_CONTACT } from '../config/env';
-import { ChatApiResponse, ChatMessage, ChatSource } from '../types/chat';
+import { ChatApiResponse, ChatHistoryResponse, ChatMessage, ChatSource, HistoryItem } from '../types/chat';
 import { cognitoAuthService } from './cognito';
 
 export const chatApiService = {
@@ -8,11 +8,11 @@ export const chatApiService = {
    */
   async sendQuestion(question: string): Promise<ChatMessage> {
     const session = cognitoAuthService.getStoredSession();
-    if (!session || !session.tokens || !session.tokens.idToken) {
+    if (!session || !session.tokens || (!session.tokens.idToken && !session.tokens.accessToken)) {
       throw new Error('UNAUTHORIZED_NO_TOKEN');
     }
 
-    const token = session.tokens.idToken;
+    const token = session.tokens.idToken || session.tokens.accessToken;
     const endpoint = `${ENV.API_BASE_URL}/chat`;
 
     try {
@@ -67,9 +67,118 @@ export const chatApiService = {
         text: answerText,
         sources: cleanedSources,
         isFallback,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        conversationId: data.conversationId
       };
 
+    } catch (err: any) {
+      if (err.message === 'UNAUTHORIZED_NO_TOKEN' || err.message === '401_UNAUTHORIZED') {
+        throw err;
+      }
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        throw new Error('NETWORK_ERROR');
+      }
+      throw err;
+    }
+  },
+
+  /**
+   * Retrieve member chat history from API Gateway GET /chat/history route
+   */
+  async getChatHistory(): Promise<{ messages: ChatMessage[]; rawHistory: HistoryItem[] }> {
+    const session = cognitoAuthService.getStoredSession();
+    if (!session || !session.tokens) {
+      throw new Error('UNAUTHORIZED_NO_TOKEN');
+    }
+
+    const token = session.tokens.accessToken || session.tokens.idToken;
+    if (!token) {
+      throw new Error('UNAUTHORIZED_NO_TOKEN');
+    }
+
+    const endpoint = `${ENV.API_BASE_URL}/chat/history`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        throw new Error('401_UNAUTHORIZED');
+      }
+
+      if (response.status === 403) {
+        throw new Error('403_FORBIDDEN');
+      }
+
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => '');
+        console.error(`History API Error ${response.status}:`, errorText);
+        throw new Error(`SERVER_ERROR_${response.status}`);
+      }
+
+      const data: ChatHistoryResponse = await response.json();
+      const rawHistory: HistoryItem[] = Array.isArray(data.history)
+        ? data.history
+        : Array.isArray(data.items)
+        ? data.items
+        : Array.isArray(data.messages)
+        ? data.messages
+        : [];
+
+      const messages: ChatMessage[] = rawHistory.map((item, idx) => {
+        const sender: 'user' | 'assistant' =
+          item.role === 'user' || item.sender === 'user' ? 'user' : 'assistant';
+
+        const text = item.message || item.text || item.content || item.answer || item.response || '';
+
+        const rawSources =
+          item.sources ||
+          item.citations ||
+          item.metadata?.sources ||
+          item.metadata?.citations ||
+          item.metadata?.retrieval_results ||
+          [];
+        const cleanedSources = normalizeSources(rawSources);
+
+        const isFallback = Boolean(
+          item.metadata?.fallbackUsed ||
+          item.metadata?.is_fallback ||
+          item.metadata?.isFallback
+        );
+
+        let formattedTime = '';
+        if (item.timestamp) {
+          try {
+            const d = new Date(item.timestamp);
+            if (!isNaN(d.getTime())) {
+              formattedTime = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            } else {
+              formattedTime = item.timestamp;
+            }
+          } catch {
+            formattedTime = item.timestamp;
+          }
+        }
+        if (!formattedTime) {
+          formattedTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        return {
+          id: item.conversationId ? `hist_${item.conversationId}_${idx}` : `hist_${Date.now()}_${idx}`,
+          sender,
+          text,
+          sources: cleanedSources,
+          isFallback,
+          timestamp: formattedTime,
+          conversationId: item.conversationId
+        };
+      });
+
+      return { messages, rawHistory };
     } catch (err: any) {
       if (err.message === 'UNAUTHORIZED_NO_TOKEN' || err.message === '401_UNAUTHORIZED') {
         throw err;

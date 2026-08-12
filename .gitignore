@@ -1,25 +1,34 @@
 # Dependencies
 node_modules/
+**/node_modules/
 .pnpm-store/
 .yarn/
-frontend/node_modules/
 
 # Environment files
 .env
 .env.local
 .env.*.local
-frontend/.env
-frontend/.env.local
-frontend/.env.*.local
+*.env
+*.env.*
+**/.env
+**/.env.local
+**/.env.*.local
 
-# Production build artifacts
+# Production build artifacts & caches
 dist/
+**/dist/
+dist-ssr/
+**/dist-ssr/
 build/
+**/build/
 out/
-frontend/dist/
-frontend/build/
+**/out/
+.vite/
+**/.vite/
+*.tsbuildinfo
 
 # Logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -27,7 +36,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Editor & IDE files
-.vscode/*
+.vscode/
 !.vscode/extensions.json
 .idea/
 *.suo
@@ -35,6 +44,7 @@ lerna-debug.log*
 *.njsproj
 *.sln
 *.sw?
+*.swp
 
 # OS generated files
 .DS_Store
@@ -44,8 +54,3 @@ lerna-debug.log*
 .Trashes
 ehthumbs.db
 Thumbs.db
-
-# Vite / Temporary files
-.vite/
-frontend/.vite/
-*.tsbuildinfo

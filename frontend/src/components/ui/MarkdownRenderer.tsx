@@ -54,7 +54,7 @@ const CodeBlock: React.FC<{ language: string; value: string }> = ({ language, va
 
 export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, className = '' }) => {
   return (
-    <div className={`markdown-content text-slate-200 text-sm leading-relaxed ${className}`}>
+    <div className={`markdown-content text-slate-200 text-sm leading-relaxed break-words [word-break:break-word] overflow-wrap-break-word ${className}`}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
@@ -69,7 +69,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
 
             return (
               <code
-                className="bg-slate-800/90 text-[#ff9900] px-1.5 py-0.5 rounded font-mono text-xs border border-slate-700/80"
+                className="bg-slate-800/90 text-[#ff9900] px-1.5 py-0.5 rounded font-mono text-xs border border-slate-700/80 break-all"
                 {...props}
               >
                 {children}
@@ -104,7 +104,7 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
                 href={href}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-[#ff9900] hover:underline font-medium inline-flex items-center gap-1 transition-colors"
+                className="text-[#ff9900] hover:underline font-medium inline-flex items-center gap-1 transition-colors break-all"
               >
                 {children}
                 <ExternalLink className="w-3 h-3 opacity-70 shrink-0" />
@@ -134,16 +134,14 @@ export const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, cla
           },
           blockquote({ children }) {
             return (
-              <blockquote className="border-l-4 border-[#ff9900] bg-slate-900/60 pl-4 py-2.5 my-3 rounded-r-xl text-slate-300 italic font-sans">
-                {children}
-              </blockquote>
+              <blockquote className="border-l-4 border-[#ff9900] bg-slate-900/60 pl-4 py-2.5 my-3 rounded-r-xl text-slate-300 italic font-sans">{children}</blockquote>
             );
           },
           hr() {
             return <hr className="border-slate-800 my-4" />;
           },
           p({ children }) {
-            return <p className="my-2 text-slate-200 leading-relaxed">{children}</p>;
+            return <p className="my-2 text-slate-200 leading-relaxed break-words [word-break:break-word]">{children}</p>;
           }
         }}
       >

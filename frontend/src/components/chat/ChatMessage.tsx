@@ -8,6 +8,7 @@ import { Bot, User, ShieldCheck } from 'lucide-react';
 
 interface ChatMessageProps {
   message: ChatMessageType;
+  onSelectDocGroup?: (docGroup: GroupedDocument) => void;
 }
 
 export function groupSourcesByDocument(sources: ChatSource[]): GroupedDocument[] {
@@ -35,11 +36,19 @@ export function groupSourcesByDocument(sources: ChatSource[]): GroupedDocument[]
   return result;
 }
 
-export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
+export const ChatMessage: React.FC<ChatMessageProps> = ({ message, onSelectDocGroup }) => {
   const isUser = message.sender === 'user';
   const [selectedDocGroup, setSelectedDocGroup] = useState<GroupedDocument | null>(null);
 
-  const groupedDocs = !isUser && message.sources ? groupSourcesByDocument(message.sources) : [];
+  const groupedDocs = !isUser && !message.isFallback && message.sources ? groupSourcesByDocument(message.sources) : [];
+
+  const handleSelectDoc = (docGroup: GroupedDocument) => {
+    if (onSelectDocGroup) {
+      onSelectDocGroup(docGroup);
+    } else {
+      setSelectedDocGroup(docGroup);
+    }
+  };
 
   return (
     <div className={`flex items-start gap-3 my-5 ${isUser ? 'flex-row-reverse' : ''} animate-fadeIn`}>
@@ -56,7 +65,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       </div>
 
       {/* Bubble / Content */}
-      <div className={`max-w-2xl w-full ${isUser ? 'items-end' : 'items-start'}`}>
+      <div className={`max-w-3xl w-full ${isUser ? 'items-end' : 'items-start'}`}>
         
         {/* Header Label */}
         <div className={`flex items-center gap-2 mb-1.5 px-1 ${isUser ? 'flex-row-reverse' : ''}`}>
@@ -92,8 +101,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
           {/* Fallback Contact Card */}
           {message.isFallback && <FallbackContactCard />}
 
-          {/* Grouped Grounded Sources Section */}
-          {!isUser && groupedDocs.length > 0 && (
+          {/* Grouped Grounded Sources Section (Only for non-fallback grounded responses) */}
+          {!isUser && !message.isFallback && groupedDocs.length > 0 && (
             <div className="mt-4 pt-4 border-t border-slate-800/80">
               <div className="flex items-center justify-between mb-2.5">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#ff9900]">
@@ -109,7 +118,7 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
                   <SourceCard
                     key={docGroup.id}
                     documentGroup={docGroup}
-                    onSelect={(selected) => setSelectedDocGroup(selected)}
+                    onSelect={handleSelectDoc}
                     index={idx}
                   />
                 ))}
@@ -119,8 +128,8 @@ export const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         </div>
       </div>
 
-      {/* Responsive Citation Side Panel */}
-      {selectedDocGroup && (
+      {/* Local Citation Side Panel fallback if no parent handler */}
+      {!onSelectDocGroup && selectedDocGroup && (
         <CitationSidePanel
           isOpen={Boolean(selectedDocGroup)}
           onClose={() => setSelectedDocGroup(null)}

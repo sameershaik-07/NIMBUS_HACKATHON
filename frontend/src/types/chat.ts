@@ -17,6 +17,7 @@ export interface ChatMessage {
   sources?: ChatSource[];
   isFallback?: boolean;
   timestamp: string;
+  conversationId?: string;
   error?: boolean;
 }
 
@@ -35,5 +36,43 @@ export interface ChatApiResponse {
   retrieval_results?: ChatSource[];
   is_fallback?: boolean;
   isFallback?: boolean;
+  conversationId?: string;
   error?: string;
 }
+
+export interface HistoryItem {
+  message?: string;
+  text?: string;
+  content?: string;
+  response?: string;
+  answer?: string;
+  role?: string;
+  sender?: string;
+  conversationId?: string;
+  userId?: string;
+  timestamp?: string;
+  metadata?: {
+    username?: string;
+    email?: string;
+    citationCount?: number;
+    fallbackUsed?: boolean;
+    is_fallback?: boolean;
+    isFallback?: boolean;
+    sourceCount?: number;
+    sources?: ChatSource[];
+    citations?: ChatSource[];
+    [key: string]: any;
+  };
+  sources?: ChatSource[];
+  citations?: ChatSource[];
+  [key: string]: any;
+}
+
+export interface ChatHistoryResponse {
+  success?: boolean;
+  userId?: string;
+  history?: HistoryItem[];
+  items?: HistoryItem[];
+  messages?: HistoryItem[];
+}
+
