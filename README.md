@@ -37,72 +37,70 @@ The High-Level Design showcases the global system architecture, client interface
 ```mermaid
 flowchart TD
 
-    subgraph ClientLayer["Client Layer"]
-        Browser["Web Browser PWA"]
-        Mobile["Mobile Web App"]
-    end
+subgraph ClientLayer["Client Layer"]
+    Browser["Web Browser PWA"]
+end
 
-    subgraph CDNHost["Hosting and Edge CDN"]
-        Amplify["AWS Amplify Hosting"]
-        CloudFront["AWS CloudFront CDN"]
-    end
+subgraph HostingLayer["Hosting"]
+    Amplify["AWS Amplify Hosting"]
+end
 
-    subgraph AuthLayer["Identity and Authentication"]
-        CognitoPool["AWS Cognito User Pool"]
-        CognitoAuth["Cognito OAuth 2.0 PKCE JWT Authorizer"]
-    end
+subgraph AuthLayer["Identity and Authentication"]
+    CognitoPool["AWS Cognito User Pool"]
+    CognitoAuth["Cognito OAuth 2.0 PKCE JWT Authorizer"]
+end
 
-    subgraph APILayer["API Ingress Layer"]
-        APIGateway["AWS API Gateway"]
-    end
+subgraph APILayer["API Ingress Layer"]
+    APIGateway["AWS API Gateway"]
+end
 
-    subgraph ComputeLayer["Serverless Compute Layer"]
-        LambdaChat["AWS Lambda Chat Handler"]
-        LambdaHistory["AWS Lambda History Handler"]
-    end
+subgraph ComputeLayer["Serverless Compute Layer"]
+    LambdaChat["AWS Lambda Chat Handler"]
+    LambdaHistory["AWS Lambda History Handler"]
+end
 
-    subgraph AILayer["AI and RAG Knowledge Engine"]
-        Bedrock["Amazon Bedrock Foundation Model"]
-        BedrockKB["Amazon Bedrock Knowledge Base"]
-        S3Bucket["Amazon S3 Knowledge Storage"]
-    end
+subgraph AILayer["AI and RAG Knowledge Engine"]
+    Bedrock["Amazon Bedrock Foundation Model"]
+    BedrockKB["Amazon Bedrock Knowledge Base"]
+    S3Bucket["Amazon S3 Knowledge Storage"]
+end
 
-    subgraph StorageLayer["Persistence Layer"]
-        DynamoDB[("Amazon DynamoDB Chat History")]
-    end
+subgraph StorageLayer["Persistence Layer"]
+    DynamoDB[("Amazon DynamoDB Chat History")]
+end
 
 
-    Browser -->|"HTTPS Traffic"| Amplify
-    Mobile -->|"HTTPS Traffic"| Amplify
+Browser -->|"HTTPS Traffic"| Amplify
 
-    Amplify -->|"Content Delivery"| CloudFront
-
-
-    Browser -->|"Authentication"| CognitoPool
-    Browser -->|"Bearer JWT"| APIGateway
-
-    APIGateway -->|"JWT Validation"| CognitoAuth
-    CognitoAuth -->|"Authorized Request"| APIGateway
+Amplify -->|"Web Application"| Browser
 
 
-    APIGateway -->|"POST chat"| LambdaChat
-    APIGateway -->|"GET chat history"| LambdaHistory
+Browser -->|"Authentication"| CognitoPool
+Browser -->|"Bearer JWT"| APIGateway
+
+APIGateway -->|"JWT Validation"| CognitoAuth
+CognitoAuth -->|"Authorized Request"| APIGateway
 
 
-    LambdaChat -->|"Retrieve Context"| BedrockKB
-    BedrockKB -->|"Knowledge Documents"| S3Bucket
-    BedrockKB -->|"Context and Prompt"| Bedrock
-    Bedrock -->|"Grounded Answer and Citations"| LambdaChat
+APIGateway -->|"POST chat"| LambdaChat
+APIGateway -->|"GET chat history"| LambdaHistory
 
 
-    LambdaChat -->|"Store Conversation"| DynamoDB
-    LambdaHistory -->|"Fetch User History"| DynamoDB
+LambdaChat -->|"Retrieve Context"| BedrockKB
+BedrockKB -->|"Knowledge Documents"| S3Bucket
+BedrockKB -->|"Context and Prompt"| Bedrock
+Bedrock -->|"Grounded Answer and Citations"| LambdaChat
 
 
-    LambdaChat -->|"Chat Response"| APIGateway
-    LambdaHistory -->|"History Response"| APIGateway
+LambdaChat -->|"Store Conversation"| DynamoDB
+LambdaHistory -->|"Fetch User History"| DynamoDB
 
-    APIGateway -->|"JSON Response"| Browser
+
+LambdaChat -->|"Chat Response"| APIGateway
+LambdaHistory -->|"History Response"| APIGateway
+
+
+APIGateway -->|"JSON Response"| Browser
 ```
 
 ---
