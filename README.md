@@ -7,7 +7,6 @@
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=white)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-06B6D4?logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
-[![Railway Deployment](https://img.shields.io/badge/Railway-Production-0B0D0E?logo=railway&logoColor=white)](https://railway.app/)
 
 NIMBUS is an enterprise-grade AI-powered Student & Club Member Portal built on AWS Serverless architecture and Amazon Bedrock Retrieval-Augmented Generation (RAG). It provides intelligent, grounded answers to university and club member queries backed by verified knowledge base documents stored in S3, while maintaining session history, secure PKCE authentication via AWS Cognito, and instant responses via API Gateway and Lambda.
 
