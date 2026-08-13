@@ -482,14 +482,14 @@ npm ci
 
 # 4. Create your local environment file (.env)
 cat <<EOT > .env
-VITE_AWS_REGION=us-east-1
-VITE_COGNITO_USER_POOL_ID=us-east-1_rYRuOFH4g
-VITE_COGNITO_CLIENT_ID=1bq21hg193purcarvv759to3k
-VITE_COGNITO_AUTHORITY=https://cognito-idp.us-east-1.amazonaws.com/us-east-1_rYRuOFH4g
+VITE_AWS_REGION=your-region
+VITE_COGNITO_USER_POOL_ID=your-user-pool-id
+VITE_COGNITO_CLIENT_ID=your-client-id
+VITE_COGNITO_AUTHORITY=https://cognito-idp.your-region.amazonaws.com/your-user-pool-id
 VITE_COGNITO_REDIRECT_URI=http://localhost:5173/auth/callback
 VITE_COGNITO_LOGOUT_URI=http://localhost:5173/
-VITE_COGNITO_DOMAIN=https://us-east-1ryruofh4g.auth.us-east-1.amazoncognito.com
-VITE_API_BASE_URL=https://857hwv0wg2.execute-api.us-east-1.amazonaws.com
+VITE_COGNITO_DOMAIN=https://your-domain.auth.your-region.amazoncognito.com
+VITE_API_BASE_URL=https://your-api-gateway-id.execute-api.your-region.amazonaws.com
 EOT
 
 # 5. Start the Vite development server
