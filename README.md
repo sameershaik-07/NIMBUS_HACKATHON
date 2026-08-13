@@ -23,7 +23,6 @@ NIMBUS is an enterprise-grade AI-powered Student & Club Member Portal built on A
 - [API Contracts & JSON Examples](#-api-contracts--json-examples)
 - [Database Schema & Platform ID Design](#-database-schema--platform-id-design)
 - [Production Database Migrations](#-production-database-migrations)
-- [Step-by-Step Railway Deployment Guide](#-step-by-step-railway-deployment-guide)
 - [GitHub Actions CI/CD Pipeline & Secrets](#-github-actions-cicd-pipeline--secrets)
 - [Security & Production Hardening](#-security--production-hardening)
 - [Troubleshooting & Diagnostic Matrix](#-troubleshooting--diagnostic-matrix)
@@ -335,37 +334,6 @@ aws dynamodb create-table \
         AttributeName=timestamp,KeyType=RANGE \
     --billing-mode PAY_PER_REQUEST \
     --region us-east-1
-```
-
----
-
-## 🚂 Step-by-Step Railway Deployment Guide
-
-Railway hosts the static build output or Node.js web server for the NIMBUS application.
-
-### Step 1: Connect Repository to Railway
-1. Log into [Railway.app](https://railway.app/).
-2. Click **New Project** -> **Deploy from GitHub repo**.
-3. Select `sameershaik-07/NIMBUS_HACKATHON`.
-
-### Step 2: Configure Root & Build Commands
-In Railway Project Settings:
-- **Root Directory**: `frontend`
-- **Build Command**: `npm ci && npm run build`
-- **Start Command**: `npx serve -s dist -l $PORT`
-
-### Step 3: Set Environment Variables
-Navigate to the **Variables** tab in Railway and add:
-
-```env
-VITE_AWS_REGION=your-region
-VITE_COGNITO_USER_POOL_ID=your-user-pool-id
-VITE_COGNITO_CLIENT_ID=your-client-id
-VITE_COGNITO_AUTHORITY=https://cognito-idp.your-region.amazonaws.com/your-user-pool-id
-VITE_COGNITO_REDIRECT_URI=http://localhost:5173/auth/callback
-VITE_COGNITO_LOGOUT_URI=http://localhost:5173/
-VITE_COGNITO_DOMAIN=https://your-domain.auth.your-region.amazoncognito.com
-VITE_API_BASE_URL=https://your-api-gateway-id.execute-api.your-region.amazonaws.com
 ```
 
 ---
