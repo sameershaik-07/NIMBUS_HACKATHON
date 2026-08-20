@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { AuthProvider, useAuth } from './auth/AuthContext';
 import { ProtectedRoute } from './auth/ProtectedRoute';
 import { AppBackground } from './components/layout/AppBackground';
@@ -14,18 +14,40 @@ import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ChatPage } from './pages/ChatPage';
+import { AdminPage } from './pages/AdminPage';
 
-type TabType = 'landing' | 'signin' | 'signup' | 'verify' | 'forgot' | 'reset' | 'dashboard' | 'chat';
+type TabType =
+  | 'landing'
+  | 'signin'
+  | 'signup'
+  | 'verify'
+  | 'forgot'
+  | 'reset'
+  | 'dashboard'
+  | 'chat'
+  | 'admin';
+
+/** Admin is intentionally URL-only — no navbar link. */
+const ADMIN_PATH = '/admin';
+
+const MEMBER_TABS: TabType[] = ['dashboard', 'chat'];
+const PUBLIC_TABS: TabType[] = ['landing', 'signin', 'signup', 'verify', 'forgot', 'reset'];
+
+function isAdminPath(pathname: string = window.location.pathname): boolean {
+  const normalised = pathname.replace(/\/+$/, '') || '/';
+  return normalised === ADMIN_PATH || normalised.endsWith(ADMIN_PATH);
+}
 
 const MainApp: React.FC = () => {
   const { isAuthenticated, loading } = useAuth();
 
-  // Initialize active tab from localStorage if available so refreshing stays on the same page
+  // Member tabs restore from localStorage.
+  // Admin is NEVER restored from storage — only from the /admin URL.
   const [activeTab, setActiveTab] = useState<TabType>(() => {
+    if (isAdminPath()) return 'admin';
     const saved = localStorage.getItem('nimbus_active_tab') as TabType;
-    if (saved && ['dashboard', 'chat', 'landing', 'signin', 'signup'].includes(saved)) {
-      return saved;
-    }
+    if (saved && MEMBER_TABS.includes(saved)) return saved;
+    if (saved && PUBLIC_TABS.includes(saved)) return saved;
     return 'landing';
   });
 
@@ -34,33 +56,99 @@ const MainApp: React.FC = () => {
   const [signInMessage, setSignInMessage] = useState<string | null>(null);
   const [chatQuery, setChatQuery] = useState<string | undefined>(undefined);
 
-  // Sync active tab state when auth status changes or page reloads
-  useEffect(() => {
-    if (!loading) {
-      if (isAuthenticated) {
-        // If logged in, check if user had a saved protected tab ('chat' or 'dashboard')
-        const saved = localStorage.getItem('nimbus_active_tab') as TabType;
-        if (saved === 'chat' || saved === 'dashboard') {
-          setActiveTab(saved);
-        } else if (activeTab === 'landing' || activeTab === 'signin' || activeTab === 'signup') {
-          setActiveTab('dashboard');
-          localStorage.setItem('nimbus_active_tab', 'dashboard');
-        }
-      } else {
-        // If unauthenticated, redirect from protected pages to landing
-        if (activeTab === 'dashboard' || activeTab === 'chat') {
-          setActiveTab('landing');
-          localStorage.removeItem('nimbus_active_tab');
-        }
+  /**
+   * Keep the browser URL in sync with the active tab.
+   * - Admin tab  →  /admin
+   * - Any other  →  /  (clears the admin path so it cannot linger)
+   */
+  const syncUrl = useCallback((tab: TabType) => {
+    const target = tab === 'admin' ? ADMIN_PATH : '/';
+    const current = window.location.pathname.replace(/\/+$/, '') || '/';
+    if (current !== target) {
+      window.history.pushState({ tab }, '', target);
+    }
+  }, []);
+
+  const handleNavigate = useCallback((tab: TabType) => {
+    setActiveTab(tab);
+    if (tab === 'admin') {
+      // Admin must only be reached via the /admin URL.
+      // Do not persist admin in localStorage (no silent reopen on refresh).
+      localStorage.removeItem('nimbus_active_tab');
+      if (!isAdminPath()) {
+        window.history.pushState({ tab: 'admin' }, '', ADMIN_PATH);
+      }
+    } else {
+      localStorage.setItem('nimbus_active_tab', tab);
+      // Leaving admin clears the path so refresh won't reopen admin.
+      if (isAdminPath()) {
+        window.history.pushState({ tab }, '', '/');
       }
     }
-  }, [isAuthenticated, loading]);
-
-  const handleNavigate = (tab: TabType) => {
-    setActiveTab(tab);
-    localStorage.setItem('nimbus_active_tab', tab);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  }, []);
+
+  // Browser back/forward + direct URL entry (user types /admin).
+  useEffect(() => {
+    const onPopState = () => {
+      if (isAdminPath()) {
+        setActiveTab('admin');
+        localStorage.removeItem('nimbus_active_tab');
+      } else {
+        const saved = localStorage.getItem('nimbus_active_tab') as TabType;
+        if (saved && MEMBER_TABS.includes(saved) && isAuthenticated) {
+          setActiveTab(saved);
+        } else if (!isAuthenticated) {
+          setActiveTab('landing');
+        } else {
+          setActiveTab('dashboard');
+        }
+      }
+    };
+
+    if (isAdminPath()) {
+      setActiveTab('admin');
+      localStorage.removeItem('nimbus_active_tab');
+    }
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [isAuthenticated]);
+
+  // Auth-driven redirects (same behaviour as before, plus admin path rules).
+  useEffect(() => {
+    if (loading) return;
+
+    if (isAuthenticated) {
+      if (isAdminPath()) {
+        setActiveTab('admin');
+        return;
+      }
+      const saved = localStorage.getItem('nimbus_active_tab') as TabType;
+      if (saved === 'chat' || saved === 'dashboard') {
+        setActiveTab(saved);
+      } else if (
+        activeTab === 'landing' ||
+        activeTab === 'signin' ||
+        activeTab === 'signup' ||
+        activeTab === 'admin'
+      ) {
+        // If they were on admin but URL is no longer /admin, go home.
+        setActiveTab('dashboard');
+        localStorage.setItem('nimbus_active_tab', 'dashboard');
+        syncUrl('dashboard');
+      }
+    } else {
+      // Unauthenticated users cannot stay on protected member pages.
+      if (activeTab === 'dashboard' || activeTab === 'chat') {
+        setActiveTab('landing');
+        localStorage.removeItem('nimbus_active_tab');
+        syncUrl('landing');
+      }
+      // /admin while logged out: keep tab=admin so ProtectedRoute can
+      // bounce them to sign-in; after login the URL still says /admin.
+    }
+  }, [isAuthenticated, loading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenChatWithQuery = (query: string) => {
     setChatQuery(query);
@@ -75,9 +163,7 @@ const MainApp: React.FC = () => {
 
       <main className="flex-1">
         {activeTab === 'landing' && (
-          <LandingPage
-            onNavigate={(target) => handleNavigate(target)}
-          />
+          <LandingPage onNavigate={(target) => handleNavigate(target)} />
         )}
 
         {activeTab === 'signin' && (
@@ -148,6 +234,15 @@ const MainApp: React.FC = () => {
                 setSignInMessage('Your member session expired. Please sign in again.');
                 handleNavigate('signin');
               }}
+            />
+          </ProtectedRoute>
+        )}
+
+        {activeTab === 'admin' && (
+          <ProtectedRoute onRedirectToSignIn={() => handleNavigate('signin')}>
+            <AdminPage
+              onNavigateToChat={() => handleNavigate('chat')}
+              onNavigateToDashboard={() => handleNavigate('dashboard')}
             />
           </ProtectedRoute>
         )}

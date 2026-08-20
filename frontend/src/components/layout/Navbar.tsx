@@ -4,8 +4,8 @@ import { useAuth } from '../../auth/AuthContext';
 import { LogOut, Bot, LayoutDashboard, Menu, X, User, ShieldCheck } from 'lucide-react';
 
 interface NavbarProps {
-  activeTab: 'landing' | 'signin' | 'signup' | 'verify' | 'forgot' | 'reset' | 'dashboard' | 'chat';
-  onNavigate: (tab: 'landing' | 'signin' | 'signup' | 'verify' | 'forgot' | 'reset' | 'dashboard' | 'chat') => void;
+  activeTab: 'landing' | 'signin' | 'signup' | 'verify' | 'forgot' | 'reset' | 'dashboard' | 'chat' | 'admin';
+  onNavigate: (tab: 'landing' | 'signin' | 'signup' | 'verify' | 'forgot' | 'reset' | 'dashboard' | 'chat' | 'admin') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, onNavigate }) => {

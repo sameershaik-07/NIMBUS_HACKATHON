@@ -1,5 +1,6 @@
 import { ENV, FALLBACK_CONTACT } from '../config/env';
 import { ChatApiResponse, ChatHistoryResponse, ChatMessage, ChatSource, HistoryItem } from '../types/chat';
+import { ClubDocument, DocumentListResponse, PublishDocumentRequest, PublishDocumentResponse } from '../types/documents';
 import { cognitoAuthService } from './cognito';
 
 export const chatApiService = {
@@ -188,7 +189,107 @@ export const chatApiService = {
       }
       throw err;
     }
-  }
+  },
+
+  /**
+   * Fetch the list of knowledge documents backing the chat.
+   * Used by the member dashboard (polled, no full-page reload).
+   */
+  async getDocuments(): Promise<ClubDocument[]> {
+    const session = cognitoAuthService.getStoredSession();
+    if (!session || !session.tokens) {
+      throw new Error('UNAUTHORIZED_NO_TOKEN');
+    }
+
+    const token = session.tokens.accessToken || session.tokens.idToken;
+    if (!token) {
+      throw new Error('UNAUTHORIZED_NO_TOKEN');
+    }
+
+    const endpoint = `${ENV.API_BASE_URL}/documents`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (response.status === 401) {
+        throw new Error('401_UNAUTHORIZED');
+      }
+      if (response.status === 403) {
+        throw new Error('403_FORBIDDEN');
+      }
+      if (!response.ok) {
+        throw new Error(`SERVER_ERROR_${response.status}`);
+      }
+
+      const data: DocumentListResponse = await response.json();
+      return Array.isArray(data.documents) ? data.documents : [];
+    } catch (err: any) {
+      if (err.message === 'UNAUTHORIZED_NO_TOKEN' || err.message === '401_UNAUTHORIZED') {
+        throw err;
+      }
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        throw new Error('NETWORK_ERROR');
+      }
+      throw err;
+    }
+  },
+
+  /**
+   * Publish (create or update) a knowledge document as an ADMIN.
+   * Content may be plain text or base64-encoded.
+   */
+  async publishDocument(request: PublishDocumentRequest): Promise<PublishDocumentResponse> {
+    const session = cognitoAuthService.getStoredSession();
+    if (!session || !session.tokens) {
+      throw new Error('UNAUTHORIZED_NO_TOKEN');
+    }
+
+    const token = session.tokens.idToken || session.tokens.accessToken;
+    if (!token) {
+      throw new Error('UNAUTHORIZED_NO_TOKEN');
+    }
+
+    const endpoint = `${ENV.API_BASE_URL}/admin`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(request)
+      });
+
+      if (response.status === 401) {
+        throw new Error('401_UNAUTHORIZED');
+      }
+      if (response.status === 403) {
+        throw new Error('403_FORBIDDEN');
+      }
+
+      const data: PublishDocumentResponse = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || `SERVER_ERROR_${response.status}`);
+      }
+
+      return data;
+    } catch (err: any) {
+      if (err.message === 'UNAUTHORIZED_NO_TOKEN' || err.message === '401_UNAUTHORIZED' || err.message === '403_FORBIDDEN') {
+        throw err;
+      }
+      if (err.name === 'TypeError' && err.message.includes('fetch')) {
+        throw new Error('NETWORK_ERROR');
+      }
+      throw err;
+    }
+  },
 };
 
 /**

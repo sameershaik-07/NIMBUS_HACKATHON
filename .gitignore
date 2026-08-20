@@ -27,6 +27,11 @@ out/
 **/.vite/
 *.tsbuildinfo
 
+# Python caches (backend Lambda helpers)
+__pycache__/
+**/__pycache__/
+*.py[cod]
+
 # Logs
 *.log
 npm-debug.log*

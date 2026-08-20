@@ -1,17 +1,45 @@
-import React from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../auth/AuthContext';
-import { Bot, Calendar, Globe, Cpu, Award, ArrowRight, ShieldCheck, Sparkles, BookOpen } from 'lucide-react';
+import { chatApiService } from '../services/api';
+import { ClubDocument } from '../types/documents';
+import { Bot, Calendar, Globe, Cpu, Award, ArrowRight, ShieldCheck, Sparkles, BookOpen, FileText, Loader2, RefreshCw } from 'lucide-react';
 
 interface DashboardPageProps {
   onOpenChatWithQuery?: (query: string) => void;
   onNavigateToChat: () => void;
 }
 
+// How often the dashboard refreshes the document list (ms). Kept under
+// the ~60s re-index window so newly published docs appear without a
+// full page reload.
+const DOC_REFRESH_MS = 20000;
+
 export const DashboardPage: React.FC<DashboardPageProps> = ({
   onOpenChatWithQuery,
   onNavigateToChat,
 }) => {
   const { user } = useAuth();
+  const [documents, setDocuments] = useState<ClubDocument[]>([]);
+  const [docsLoading, setDocsLoading] = useState(true);
+  const [docsError, setDocsError] = useState(false);
+
+  const loadDocuments = useCallback(async () => {
+    try {
+      const docs = await chatApiService.getDocuments();
+      setDocuments(docs);
+      setDocsError(false);
+    } catch {
+      setDocsError(true);
+    } finally {
+      setDocsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDocuments();
+    const interval = setInterval(loadDocuments, DOC_REFRESH_MS);
+    return () => clearInterval(interval);
+  }, [loadDocuments]);
 
   const handleCardClick = (query: string) => {
     if (onOpenChatWithQuery) {
@@ -174,6 +202,72 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
         </div>
       </div>
+
+
+      {/* Live Knowledge Documents List */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold text-white flex items-center gap-2">
+            <BookOpen className="w-5 h-5 text-[#ff9900]" />
+            Knowledge Documents
+          </h3>
+          <div className="flex items-center gap-2">
+            {docsLoading && documents.length === 0 ? (
+              <Loader2 className="w-4 h-4 text-slate-500 animate-spin" />
+            ) : (
+              <RefreshCw className="w-4 h-4 text-slate-500" />
+            )}
+            <span className="text-xs text-slate-500">
+              {documents.length} document{documents.length === 1 ? '' : 's'}
+            </span>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-400 -mt-1">
+          Updated automatically — no refresh needed. Newly published
+          documents appear here within about a minute.
+        </p>
+
+        {docsError ? (
+          <div className="p-4 rounded-2xl bg-red-500/10 border border-red-500/30 text-xs text-red-300">
+            Unable to load the document list. Please try again later.
+          </div>
+        ) : docsLoading && documents.length === 0 ? (
+          <div className="flex items-center justify-center py-10 text-slate-500">
+            <Loader2 className="w-5 h-5 animate-spin" />
+          </div>
+        ) : documents.length === 0 ? (
+          <div className="p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs text-slate-500">
+            No documents published yet.
+          </div>
+        ) : (
+          <div className="rounded-3xl bg-slate-900/90 border border-slate-800 p-5 shadow-[0_0_40px_rgba(0,0,0,0.4)]">
+            <ul className="divide-y divide-slate-800/70">
+              {documents.map((doc) => (
+                <li
+                  key={doc.s3Key}
+                  className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                >
+                  <div className="w-9 h-9 rounded-lg bg-[#ff9900]/10 border border-[#ff9900]/20 flex items-center justify-center shrink-0">
+                    <FileText className="w-4 h-4 text-[#ff9900]" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-mono font-bold text-slate-100 truncate">
+                      {doc.filename}
+                    </p>
+                    {(doc.publishedAt || doc.lastModified) && (
+                      <p className="mt-0.5 text-[11px] text-slate-500">
+                        Updated {new Date(doc.publishedAt || doc.lastModified || '').toLocaleString()}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </div>
+
 
     </div>
   );

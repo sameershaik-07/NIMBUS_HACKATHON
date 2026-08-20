@@ -212,6 +212,48 @@ export const cognitoAuthService = {
       clearLocalSession();
       return null;
     }
+  },
+
+  /**
+   * Decode the stored ID token payload to read Cognito group
+   * membership (e.g. "ADMIN"). Used to gate admin UI controls and
+   * routing in the frontend (the backend enforces this too).
+   */
+  getUserGroups(): string[] {
+    try {
+      const tokensRaw = localStorage.getItem(STORAGE_KEY);
+      if (!tokensRaw) return [];
+
+      const tokens: AuthTokens = JSON.parse(tokensRaw);
+      const idToken = tokens.idToken;
+      if (!idToken) return [];
+
+      const payloadPart = idToken.split('.')[1];
+      if (!payloadPart) return [];
+
+      // JWT payloads are base64url-encoded.
+      const normalized = payloadPart.replace(/-/g, '+').replace(/_/g, '/');
+      const decoded = decodeURIComponent(
+        Array.prototype.map
+          .call(atob(normalized), (c: string) =>
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+          )
+          .join('')
+      );
+
+      const payload = JSON.parse(decoded);
+      const groups = payload['cognito:groups'];
+
+      if (Array.isArray(groups)) {
+        return groups.map((g) => String(g));
+      }
+      if (typeof groups === 'string') {
+        return [groups];
+      }
+      return [];
+    } catch {
+      return [];
+    }
   }
 };
 

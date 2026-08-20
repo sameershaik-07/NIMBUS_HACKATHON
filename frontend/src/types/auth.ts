@@ -2,6 +2,7 @@ export interface UserProfile {
   email: string;
   sub?: string;
   emailVerified?: boolean;
+  groups?: string[];
 }
 
 export interface AuthState {

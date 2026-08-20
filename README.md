@@ -174,6 +174,55 @@ sequenceDiagram
 - **Chat History Synchronization**: Instant retrieval of historical conversations via `GET /chat/history`.
 - **Responsive Dark/Light Glassmorphism UI**: Built with modern Tailwind CSS aesthetics, responsive sidebar layout, and micro-animations.
 - **PWA Ready**: Offline support banner and install prompt for desktop and mobile devices.
+- **Admin Publishing Console**: Club admins can add or update a knowledge document by pasting Markdown or uploading a file (Cognito `ADMIN` group enforced).
+- **Auto Re-index on Publish**: New or updated content is re-ingested into the Bedrock Knowledge Base and searchable within ~60 seconds.
+- **Live Dashboard Sync**: The member dashboard and admin page poll for the latest document list with no full-page reload.
+- **Grounding From Knowledge Base**: Answers cite the exact source file and markdown section for every response.
+
+> **Repo layout:** the serverless Lambda handlers live in [`backend/`](./backend) with a `deploy.py` helper, the seed knowledge content lives in [`knowledge/`](./knowledge), and the web app lives in [`frontend/`](./frontend).
+
+---
+
+## 📚 Admin Publishing & Live Index Sync
+
+### 1. Admin page (`POST /admin`)
+Club administrators (users in the Cognito **`ADMIN`** group) publish documents by pasting Markdown or uploading a file:
+
+```http
+POST /admin HTTP/1.1
+Authorization: Bearer <ADMIN ID Token>
+Content-Type: application/json
+
+{
+  "filename": "10-team-roster.md",
+  "content": "# Team roster\n\n...markdown..."
+}
+```
+
+The handler validates the filename (blocks `..`, `/`, `\`), stores it at `s3://nimbus-hackathon/admin/<filename>.md`, then triggers a Knowledge Base ingestion job. Non-admin callers receive `403`.
+
+### 2. Re-index on publish
+`nimbus-admin-handler` calls `StartIngestionJob` against the managed data source after each publish. Managed Knowledge Base ingestion completes in ~30–60 seconds, so the new/changed content is searchable within the ~60s demo window.
+
+### 3. Chat sync (no refresh)
+`nimbus-chat-handler` performs a fresh `Retrieve` on every question against the latest index — the very next question reflects newly published content with no page reload.
+
+### 4. Member dashboard (no full reload)
+`GET /documents` returns the full set of searchable Markdown docs (root starter pack **and** `admin/*`). The dashboard polls every 20s and updates the list in place.
+
+### 5. Event-day briefing
+`event-day-briefing.md` is seeded and ingested so the smoke-test questions cite it.
+
+### 6. Smoke test (30% demo)
+`09-smoke-test-questions.md` defines three questions that must cite `event-day-briefing.md`:
+
+| # | Question | Expected |
+| --- | --- | --- |
+| 1 | What room are judging and final demos in? | **Hall B, Room 204** |
+| 2 | What time is lunch today? | **1:30 PM** |
+| 3 | What time are final demos? | **4:00 PM** |
+
+<!-- requirements-checklist -->
 
 ---
 
